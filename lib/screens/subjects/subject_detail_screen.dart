@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../config/theme.dart';
 import '../../models/models.dart';
-import '../../models/enums.dart';
 import '../../services/auth_service.dart';
 import '../../services/local_database_service.dart';
 import '../semesters/subject_form_screen.dart';
@@ -135,10 +134,12 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_subject == null)
+    }
+    if (_subject == null) {
       return const Scaffold(body: Center(child: Text('Materia no encontrada')));
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -707,8 +708,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen>
                         );
 
                         await _db.saveGradePeriod(updated);
+                        if (!mounted) return;
                         _loadData();
-                        if (mounted) Navigator.pop(context);
+                        Navigator.pop(context);
                       },
                 child: const Text('Guardar'),
               ),

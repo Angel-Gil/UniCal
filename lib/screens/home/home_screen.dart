@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
@@ -5,6 +6,8 @@ import '../../models/models.dart';
 import '../../services/local_database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/update_service.dart';
+import '../../services/widget_service.dart';
+import '../../services/sync_service.dart';
 
 /// Pantalla principal / Dashboard
 class HomeScreen extends StatefulWidget {
@@ -25,10 +28,15 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
 
+  StreamSubscription? _dataSubscription;
+
   @override
   void initState() {
     super.initState();
     _auth.authState.addListener(_loadData);
+    _dataSubscription = _db.onDataChanged.listen((_) {
+      if (mounted) _loadData();
+    });
     _loadData();
     // Verificar actualizaciones después de un breve delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -39,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _auth.authState.removeListener(_loadData);
+    _dataSubscription?.cancel();
     super.dispose();
   }
 
@@ -62,6 +71,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _upcomingEvents = events;
         _isLoading = false;
       });
+
+      // Update home widget with latest schedule
+      WidgetService.updateNextClassWidget();
+
+      // Silent auto-backup (no notification to user)
+      if (!AuthService.instance.isGuest) {
+        // ignore errors silently
+        try {
+          await SyncService.instance.backupData();
+        } catch (_) {}
+      }
     } else {
       setState(() => _isLoading = false);
     }

@@ -415,12 +415,13 @@ class SyncService {
 
   /// Realiza una copia de seguridad forzada (Sube todo local a Firestore)
   Future<SyncResult> backupData() async {
-    if (!_isOnline)
+    if (!_isOnline) {
       return SyncResult(
         success: false,
         message: 'Sin conexión',
         syncedCount: 0,
       );
+    }
 
     try {
       final user = AuthService.instance.currentUser;
@@ -501,12 +502,13 @@ class SyncService {
 
   /// Restaura datos desde Firestore (Descarga todo y sobrescribe local si es necesario)
   Future<SyncResult> restoreData() async {
-    if (!_isOnline)
+    if (!_isOnline) {
       return SyncResult(
         success: false,
         message: 'Sin conexión',
         syncedCount: 0,
       );
+    }
 
     try {
       final user = AuthService.instance.currentUser;

@@ -12,12 +12,36 @@ import '../screens/subjects/subject_detail_screen.dart';
 import '../screens/schedule/schedule_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../services/auth_service.dart';
 
 /// Configuración de rutas de la aplicación
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    refreshListenable: AuthService.instance.authState,
+    redirect: (context, state) {
+      final isLoggedIn = AuthService.instance.isLoggedIn;
+      final path = state.uri.path;
+
+      // Rutas públicas (no requieren auth)
+      const publicRoutes = ['/', '/login', '/register'];
+      final isPublicRoute = publicRoutes.contains(path);
+
+      // Deep links son públicos
+      final isDeepLink = path.startsWith('/p/');
+
+      if (!isLoggedIn && !isPublicRoute && !isDeepLink) {
+        return '/login';
+      }
+
+      final isGuest = AuthService.instance.isGuest;
+      if (isLoggedIn && !isGuest && (path == '/login' || path == '/register')) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       // Deep Link Handler
       GoRoute(

@@ -142,9 +142,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Ingresa tu correo';
-                      if (!value.contains('@')) return 'Correo inválido';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Correo inválido';
+                      }
                       return null;
                     },
                   ),
@@ -168,8 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.length < 6)
+                      if (value == null || value.length < 6) {
                         return 'Mínimo 6 caracteres';
+                      }
                       return null;
                     },
                   ),
@@ -179,12 +183,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () async {
                         if (_emailController.text.trim().isNotEmpty) {
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             await AuthService.instance.resetPassword(
                               _emailController.text.trim(),
                             );
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 const SnackBar(
                                   content: Text(
                                     'Se ha enviado un correo para restablecer la contraseña. Revisa tu bandeja de entrada y spam.',
@@ -195,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           } catch (e) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Text('Error al enviar correo: $e'),
                                   backgroundColor: Colors.red,
@@ -310,11 +315,13 @@ class _LoginScreenState extends State<LoginScreen> {
               final email = emailController.text.trim();
               if (email.isEmpty) return;
 
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
+
               try {
                 await AuthService.instance.resetPassword(email);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Correo de recuperación enviado'),
                       backgroundColor: Colors.green,
@@ -323,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
                       backgroundColor: Colors.red,

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario — UniCal</title>
+
+    <meta property="og:title" content="Horario — UniCal">
+    <meta property="og:description" content="Mira este horario universitario compartido desde UniCal.">
+    <meta property="og:image" content="https://cu-rose.vercel.app/images/logo.png">
+    <meta property="og:url" content="https://cu-rose.vercel.app">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas & jsPDF for downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* ---- Header ---- */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 1px solid rgba(107, 127, 215, 0.2);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-left img {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+        }
+
+        .header-left h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .header-left .semester-name {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-img {
+            background: rgba(107, 127, 215, 0.15);
+            color: #8b9fef;
+            border: 1px solid rgba(107, 127, 215, 0.3);
+        }
+
+        .btn-img:hover {
+            background: rgba(107, 127, 215, 0.3);
+        }
+
+        .btn-pdf {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-pdf:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* ---- Loading / Error ---- */
+        .status-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60vh;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(107, 127, 215, 0.2);
+            border-top-color: #6B7FD7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        /* ---- Schedule Grid ---- */
+        .schedule-wrapper {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        #schedule-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(6, 1fr);
+            min-width: 700px;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .grid-header {
+            background: rgba(107, 127, 215, 0.12);
+            padding: 10px 4px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b9fef;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-label {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 4px 6px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: right;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            min-height: 50px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .day-column {
+            position: relative;
+            min-height: 50px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            border-left: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .schedule-block {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 11px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            cursor: default;
+            transition: transform 0.15s;
+        }
+
+        .schedule-block:hover {
+            transform: scale(1.03);
+            z-index: 3;
+        }
+
+        .block-name {
+            font-weight: 600;
+            font-size: 11px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .block-time,
+        .block-room {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+
+        /* ---- Footer ---- */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .footer a {
+            color: #6B7FD7;
+            text-decoration: none;
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 600px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .header-left h1 {
+                font-size: 16px;
+            }
+
+            .schedule-wrapper {
+                padding: 12px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header" id="header">
+        <div class="header-left">
+            <img src="/images/logo.png" alt="UniCal">
+            <h1>Horario</h1>
+            <span class="semester-name" id="semester-name"></span>
+        </div>
+        <div class="header-actions" id="actions" style="display: none;">
+            <button class="btn btn-img" onclick="downloadImage()">📷 Imagen</button>
+            <button class="btn btn-pdf" onclick="downloadPDF()">📄 PDF</button>
+        </div>
+    </div>
+
+    <div id="loading" class="status-container">
+        <div class="spinner"></div>
+        <span class="status-text">Cargando horario...</span>
+    </div>
+
+    <div id="error" class="status-container" style="display:none;">
+        <div class="error-icon">📭</div>
+        <span class="status-text" id="error-text">Horario no encontrado</span>
+    </div>
+
+    <div class="schedule-wrapper" id="schedule-wrapper" style="display:none;">
+        <div id="schedule-grid"></div>
+    </div>
+
+    <div class="footer">
+        <p>Compartido con <a href="https://github.com/Angel-Gil/Calendario-Universitario" target="_blank">UniCal</a></p>
+    </div>
+
+    <script>
+        // ---- Schedule Config ----
+        const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const START_HOUR = 6;
+        const END_HOUR = 22;
+        const SLOT_MINUTES = 60;
+        const SLOT_HEIGHT = 50;
+
+        // ---- Parse schedule ID from URL ----
+        function getScheduleId() {
+            const path = window.location.pathname;
+            const parts = path.split('/');
+            const last = parts[parts.length - 1];
+            if (last && last.startsWith('hid_')) {
+                return last.replace('hid_', '');
+            }
+            return null;
+        }
+
+        // ---- Time helpers ----
+        function parseTime(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h + m / 60;
+        }
+
+        function formatHour(h) {
+            const hour = Math.floor(h);
+            const min = Math.round((h - hour) * 60);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const h12 = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+            return `${h12}:${min.toString().padStart(2, '0')} ${ampm}`;
+        }
+
+        // ---- Color helpers ----
+        function intToRgba(colorInt, alpha = 1) {
+            const r = (colorInt >> 16) & 0xFF;
+            const g = (colorInt >> 8) & 0xFF;
+            const b = colorInt & 0xFF;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function getTextColor(colorInt) {
+            const r = (colorInt >> 16) & 0xFF;
+            const g = (colorInt >> 8) & 0xFF;
+            const b = colorInt & 0xFF;
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#1a1a2e' : '#ffffff';
+        }
+
+        // ---- Build Schedule Grid ----
+        function buildGrid(blocks) {
+            const grid = document.getElementById('schedule-grid');
+            grid.innerHTML = '';
+
+            const totalSlots = Math.ceil((END_HOUR - START_HOUR) * 60 / SLOT_MINUTES);
+            const numDays = DAY_NAMES.length;
+
+            grid.style.gridTemplateRows = `auto repeat(${totalSlots}, ${SLOT_HEIGHT}px)`;
+
+            // Header row
+            const cornerCell = document.createElement('div');
+            cornerCell.className = 'grid-header';
+            cornerCell.textContent = '';
+            grid.appendChild(cornerCell);
+
+            for (const day of DAY_NAMES) {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'grid-header';
+                dayHeader.textContent = day;
+                grid.appendChild(dayHeader);
+            }
+
+            // Time rows
+            for (let slot = 0; slot < totalSlots; slot++) {
+                const hourDecimal = START_HOUR + (slot * SLOT_MINUTES) / 60;
+
+                const timeCell = document.createElement('div');
+                timeCell.className = 'time-label';
+                timeCell.textContent = formatHour(hourDecimal);
+                grid.appendChild(timeCell);
+
+                for (let d = 0; d < numDays; d++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-column';
+                    dayCell.dataset.day = d;
+                    dayCell.dataset.slot = slot;
+                    grid.appendChild(dayCell);
+                }
+            }
+
+            // Place blocks
+            for (const block of blocks) {
+                const dayIndex = block.dayOfWeek - 1;
+                if (dayIndex < 0 || dayIndex >= numDays) continue;
+
+                const startH = parseTime(block.startTime);
+                const endH = parseTime(block.endTime);
+
+                const topMinutes = (startH - START_HOUR) * 60;
+                const heightMinutes = (endH - startH) * 60;
+
+                const topPx = (topMinutes / SLOT_MINUTES) * SLOT_HEIGHT;
+                const heightPx = (heightMinutes / SLOT_MINUTES) * SLOT_HEIGHT;
+
+                const dayCells = grid.querySelectorAll(`.day-column[data-day="${dayIndex}"]`);
+                if (dayCells.length === 0) continue;
+
+                const firstCell = dayCells[0];
+                const blockEl = document.createElement('div');
+                blockEl.className = 'schedule-block';
+                blockEl.style.top = `${topPx}px`;
+                blockEl.style.height = `${Math.max(heightPx - 2, 20)}px`;
+                blockEl.style.background = intToRgba(block.colorValue, 0.85);
+                blockEl.style.color = getTextColor(block.colorValue);
+
+                blockEl.innerHTML = `
+                    <span class="block-name">${block.subjectName}</span>
+                    <span class="block-time">${block.startTime} — ${block.endTime}</span>
+                    ${block.classroom ? `<span class="block-room">📍 ${block.classroom}</span>` : ''}
+                `;
+
+                firstCell.appendChild(blockEl);
+            }
+        }
+
+        // ---- Download as Image ----
+        async function downloadImage() {
+            const grid = document.getElementById('schedule-grid');
+            const canvas = await html2canvas(grid, {
+                backgroundColor: '#0f0f1a',
+                scale: 2,
+            });
+            const link = document.createElement('a');
+            link.download = 'horario-unical.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // ---- Download as PDF ----
+        async function downloadPDF() {
+            const grid = document.getElementById('schedule-grid');
+            const canvas = await html2canvas(grid, {
+                backgroundColor: '#0f0f1a',
+                scale: 2,
+            });
+
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+
+            const pdf = new jsPDF({
+                orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [imgWidth / 2, imgHeight / 2],
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth / 2, imgHeight / 2);
+            pdf.save('horario-unical.pdf');
+        }
+
+        // ---- Main: Fetch schedule from server API ----
+        document.addEventListener('DOMContentLoaded', async () => {
+            const scheduleId = getScheduleId();
+
+            if (!scheduleId) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'flex';
+                document.getElementById('error-text').textContent = 'ID de horario no válido';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/schedule?id=${encodeURIComponent(scheduleId)}`);
+
+                if (!response.ok) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'flex';
+                    if (response.status === 404) {
+                        document.getElementById('error-text').textContent = 'Horario no encontrado';
+                    } else {
+                        document.getElementById('error-text').textContent = 'Error al cargar el horario';
+                    }
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.semesterName) {
+                    document.getElementById('semester-name').textContent = `— ${data.semesterName}`;
+                }
+
+                buildGrid(data.blocks || []);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('schedule-wrapper').style.display = 'block';
+                document.getElementById('actions').style.display = 'flex';
+
+            } catch (err) {
+                console.error('Error cargando horario:', err);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'flex';
+                document.getElementById('error-text').textContent = 'Error al cargar el horario';
+            }
+        });
+    </script>
+</body>
+
+</html>

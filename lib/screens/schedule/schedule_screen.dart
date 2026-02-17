@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/models.dart';
 import '../../services/local_database_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/share_service.dart';
 
 /// Pantalla de horario semanal con colores de materias
 class ScheduleScreen extends StatefulWidget {
@@ -85,10 +90,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           });
         }
       } else {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } else {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -97,6 +106,158 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final h = int.parse(parts[0]);
     final m = int.parse(parts[1]);
     return h + (m / 60.0);
+  }
+
+  Future<void> _shareSchedule() async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    final semesters = _db.getSemesters(user.uid);
+    if (semesters.isEmpty) {
+      return;
+    }
+
+    final activeSemester = semesters.first;
+
+    // Build blocks data
+    final blocksData = <Map<String, dynamic>>[];
+    final schedules = _db.getAllSchedulesForSemester(activeSemester.syncId);
+
+    for (final schedule in schedules) {
+      final subject = _db.getSubject(schedule.subjectId);
+      if (subject != null) {
+        blocksData.add({
+          'subjectName': subject.name,
+          'classroom': schedule.classroom ?? '',
+          'dayOfWeek': schedule.dayOfWeek,
+          'startTime': schedule.startTime,
+          'endTime': schedule.endTime,
+          'colorValue': subject.colorValue,
+        });
+      }
+    }
+
+    if (blocksData.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay horarios para compartir')),
+        );
+      }
+      return;
+    }
+
+    // Show loading
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Generando enlace...')));
+    }
+
+    try {
+      final shareId = await ShareService.instance.shareSemester(
+        activeSemester.syncId,
+      );
+      final url = ShareService.instance.getShareLink(shareId);
+
+      if (!mounted) {
+        return;
+      }
+
+      // Mostrar Modal con QR y opciones
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Comparte tu Horario',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Escanea este código o comparte el enlace',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: QrImageView(
+                  data: url,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: url));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Enlace copiado')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy),
+                      label: const Text('Copiar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Share.share('Mira mi horario universitario:\n$url');
+                      },
+                      icon: const Icon(Icons.share),
+                      label: const Text('Compartir'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al compartir: $e')));
+      }
+    }
   }
 
   @override
@@ -111,6 +272,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       appBar: AppBar(
         title: const Text('Horario Semanal'),
         actions: [
+          if (_blocks.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: _shareSchedule,
+              tooltip: 'Compartir horario',
+            ),
           IconButton(
             icon: const Icon(Icons.today),
             onPressed: () {
@@ -277,7 +444,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       height: height > 2 ? height - 2 : height,
       child: GestureDetector(
         onTap: () {
-          context.push('/subject/${block.model.subjectId}');
+          _showSubjectDetails(block);
         },
         child: Container(
           padding: const EdgeInsets.all(2),
@@ -323,10 +490,82 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   String _formatTime(double time) {
     final h = time.floor();
     final m = ((time - h) * 60).round();
-
+    final ampm = h >= 12 ? 'PM' : 'AM';
     final hour12 = h > 12 ? h - 12 : (h == 0 ? 12 : h);
+    return '$hour12:${m.toString().padLeft(2, '0')} $ampm';
+  }
 
-    return '$hour12:${m.toString().padLeft(2, '0')}'; // Sin period para ahorrar espacio en subtítulo
+  void _showSubjectDetails(_ScheduleBlock block) {
+    // Find all occurrences of this subject
+    final subjectBlocks = _blocks
+        .where((b) => b.model.subjectId == block.model.subjectId)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: block.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                block.subjectName,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (block.model.classroom?.isNotEmpty == true) ...[
+              const Text(
+                'Salón:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              Text(block.model.classroom ?? ''),
+              const SizedBox(height: 12),
+            ],
+            const Text(
+              'Horario:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+            const SizedBox(height: 4),
+            ...subjectBlocks.map((b) {
+              final dayName = _days[b.dayIndex];
+              final start = _formatTime(b.startHour);
+              final end = _formatTime(b.endHour);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text('• $dayName: $start - $end'),
+              );
+            }),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/subject/${block.model.subjectId}');
+            },
+            child: const Text('Ver Materia'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

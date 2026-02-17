@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_service.dart';
+import '../../services/academic_history_pdf.dart';
 
 /// Pantalla de configuración
 class SettingsScreen extends StatefulWidget {
@@ -138,6 +139,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: 'Restaurar datos',
                       subtitle: 'Descargar desde nube',
                       onTap: _isSyncing ? null : () => _restoreData(context),
+                    ),
+                    _SettingsTile(
+                      icon: Icons.picture_as_pdf,
+                      title: 'Exportar Historial Académico',
+                      subtitle: 'Descargar en PDF',
+                      onTap: () => AcademicHistoryPdf.generateAndShare(context),
                     ),
                   ],
                 );

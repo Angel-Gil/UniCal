@@ -36,7 +36,9 @@ class _SemestersScreenState extends State<SemestersScreen>
 
   Future<void> _loadSemesters() async {
     final user = AuthService.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -59,7 +61,8 @@ class _SemestersScreenState extends State<SemestersScreen>
       if (importId != null) {
         // Clear param to avoid loop
         context.replace('/semesters');
-        _importSemesterDialog(context, initialCode: importId);
+        // Auto-execute import from deep link
+        _executeImport(importId);
       }
     });
   }
@@ -154,8 +157,14 @@ class _SemestersScreenState extends State<SemestersScreen>
                   context,
                   MaterialPageRoute(builder: (_) => const ScanQrScreen()),
                 );
-                if (code != null) {
-                  controller.text = code as String;
+                if (code != null && code is String) {
+                  final extractedId = _extractShareId(code);
+                  controller.text = extractedId;
+
+                  if (extractedId.isNotEmpty) {
+                    Navigator.pop(context);
+                    _executeImport(extractedId);
+                  }
                 }
               },
               icon: const Icon(Icons.qr_code_scanner),
@@ -170,7 +179,9 @@ class _SemestersScreenState extends State<SemestersScreen>
           ),
           ElevatedButton(
             onPressed: () async {
-              if (controller.text.isEmpty) return;
+              if (controller.text.isEmpty) {
+                return;
+              }
               Navigator.pop(context);
               _executeImport(controller.text);
             },
@@ -200,6 +211,22 @@ class _SemestersScreenState extends State<SemestersScreen>
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _extractShareId(String code) {
+    if (code.contains('/p/share_')) {
+      final uri = Uri.tryParse(code);
+      if (uri != null && uri.pathSegments.isNotEmpty) {
+        final last = uri.pathSegments.last;
+        if (last.startsWith('share_')) {
+          return last.substring(6);
+        }
+      }
+    }
+    if (code.startsWith('share_')) {
+      return code.substring(6);
+    }
+    return code;
   }
 
   Widget _buildSemesterList(
@@ -345,11 +372,15 @@ class _SemestersScreenState extends State<SemestersScreen>
               onPressed: isLoading
                   ? null
                   : () async {
-                      if (nameController.text.isEmpty) return;
+                      if (nameController.text.isEmpty) {
+                        return;
+                      }
                       setDialogState(() => isLoading = true);
 
                       final user = AuthService.instance.currentUser;
-                      if (user == null) return;
+                      if (user == null) {
+                        return;
+                      }
 
                       final semester = SemesterModel(
                         syncId: existing?.syncId ?? const Uuid().v4(),

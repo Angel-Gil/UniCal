@@ -3,6 +3,10 @@
         {
             "source": "/p/:match*",
             "destination": "/index.html"
+        },
+        {
+            "source": "/horario/:match*",
+            "destination": "/horario.html"
         }
     ]
 }

@@ -435,10 +435,19 @@ class LocalDatabaseService {
     final now = DateTime.now();
     final limit = now.add(Duration(days: days));
 
+    // Get user's subject IDs to filter events
+    final semesters = getSemesters(userId, includeArchived: true);
+    final allSubjectIds = <String>{};
+    for (final semester in semesters) {
+      final subjects = getSubjects(semester.syncId);
+      allSubjectIds.addAll(subjects.map((s) => s.syncId));
+    }
+
     return _eventBox.values
         .map((data) => _eventFromMap(data))
         .where(
           (e) =>
+              allSubjectIds.contains(e.subjectId) && // Added filter
               e.deletedAt == null &&
               e.dateTime.isAfter(now) &&
               e.dateTime.isBefore(limit),

@@ -124,6 +124,8 @@ class AuthService {
       if (migrated > 0) {
         debugPrint('AuthService: Migrados $migrated items del guest a $uid');
       }
+      // Delete guest user to prevent getCurrentUser returning it
+      await _db.deleteUser('guest_user');
 
       _currentUser = user;
       _authNotifier.value = user;
@@ -178,6 +180,8 @@ class AuthService {
       if (migrated > 0) {
         debugPrint('AuthService: Migrados $migrated items del guest a $uid');
       }
+      // Delete guest user
+      await _db.deleteUser('guest_user');
 
       _currentUser = user;
       _authNotifier.value = user;
@@ -194,6 +198,9 @@ class AuthService {
   Future<void> logout() async {
     debugPrint('AuthService: Cerrando sesión');
     await _firebaseAuth.signOut();
+    if (_currentUser != null) {
+      await _db.deleteUser(_currentUser!.uid);
+    }
     _currentUser = null;
     _authNotifier.value = null;
   }
