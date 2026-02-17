@@ -156,10 +156,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
 
     try {
-      final shareId = await ShareService.instance.shareSemester(
+      // Usar el nuevo método específico para horarios
+      final shareId = await ShareService.instance.shareSchedule(
         activeSemester.syncId,
       );
-      final url = ShareService.instance.getShareLink(shareId);
+      // Generar el enlace con el formato correcto /horario/hid_...
+      final url = ShareService.instance.getScheduleShareLink(shareId);
 
       if (!mounted) {
         return;

@@ -90,6 +90,55 @@ class ShareService {
     return 'https://cu-rose.vercel.app/p/share_$shareId';
   }
 
+  /// Comparte solo el horario para visualización web
+  Future<String> shareSchedule(String semesterId) async {
+    final semester = _db
+        .getSemesters(AuthService.instance.currentUser!.uid)
+        .firstWhere((s) => s.syncId == semesterId);
+
+    final subjects = _db.getSubjects(semesterId);
+    final schedules = _db.getAllSchedulesForSemester(semesterId);
+
+    final blocks = <Map<String, dynamic>>[];
+
+    for (final schedule in schedules) {
+      final subject = subjects
+          .where((s) => s.syncId == schedule.subjectId)
+          .firstOrNull; // Use firstOrNull safe navigation
+      // Fallback if subject not found in list (shouldn't happen if integrity maintained)
+      if (subject == null) continue;
+
+      blocks.add({
+        'dayOfWeek': schedule.dayOfWeek, // 1-7
+        'startTime': schedule.startTime, // HH:MM
+        'endTime': schedule.endTime, // HH:MM
+        'colorValue': subject.colorValue,
+        'subjectName': subject.name,
+        'classroom': schedule.classroom ?? '',
+        // 'professor': subject.professor, // Optional if needed by web
+      });
+    }
+
+    // JSON structure matching pagina_web/horario.html & api/schedule.js
+    final data = {
+      'semesterName': semester.name,
+      'blocks': blocks,
+      'createdAt': FieldValue.serverTimestamp(),
+      'createdBy': AuthService.instance.currentUser?.uid,
+      'expiresAt': Timestamp.fromDate(
+        DateTime.now().add(const Duration(days: 30)),
+      ), // 30 days retention
+    };
+
+    final docRef = await _firestore.collection('shared_schedules').add(data);
+    return docRef.id;
+  }
+
+  /// Genera el enlace específico para compartir horario
+  String getScheduleShareLink(String shareId) {
+    return 'https://cu-rose.vercel.app/horario/hid_$shareId';
+  }
+
   /// Importa un semestre compartido usando su ID.
   Future<void> importSemester(String shareId) async {
     // Limpiar códigos expirados en segundo plano
