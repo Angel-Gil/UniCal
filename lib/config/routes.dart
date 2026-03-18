@@ -12,6 +12,7 @@ import '../screens/subjects/subject_detail_screen.dart';
 import '../screens/schedule/schedule_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/settings/widget_settings_screen.dart';
 import '../services/auth_service.dart';
 
 /// Configuración de rutas de la aplicación
@@ -119,6 +120,11 @@ class AppRouter {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/settings/widget',
+            name: 'widget-settings',
+            builder: (context, state) => const WidgetSettingsScreen(),
           ),
         ],
       ),

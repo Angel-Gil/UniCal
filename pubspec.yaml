@@ -1,7 +1,7 @@
-name: calendario_academico
+name: UniCal
 description: "UniCal - Gestión de semestres, materias y notas"
 publish_to: 'none'
-version: 1.1.1+2
+version: 1.1.5+6
 
 environment:
   sdk: ^3.10.7
@@ -53,6 +53,7 @@ dependencies:
   
   # Home Widget
   home_widget: ^0.7.0
+  flutter_colorpicker: ^1.1.0
 
 dev_dependencies:
   flutter_test:

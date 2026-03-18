@@ -161,6 +161,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           _SettingsTile(
+            icon: Icons.widgets_outlined,
+            title: 'Personalizar Widget',
+            subtitle: 'Colores, estilo y preferencias del widget de inicio',
+            onTap: () => context.push('/settings/widget'),
+          ),
+          _SettingsTile(
             icon: Icons.dark_mode_outlined,
             title: 'Tema oscuro',
             trailing: Switch(value: true, onChanged: (_) {}),

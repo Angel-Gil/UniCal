@@ -44,3 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .vercel
+
+# Signing / Keystore
+*.jks
+*.keystore
+android/key.properties
+google-services.json
