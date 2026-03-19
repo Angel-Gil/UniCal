@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.angelgil" "\0"
-            VALUE "FileDescription", "calendario_academico" "\0"
+            VALUE "FileDescription", "UniCal" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "calendario_academico" "\0"
+            VALUE "InternalName", "UniCal" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.angelgil. All rights reserved." "\0"
-            VALUE "OriginalFilename", "calendario_academico.exe" "\0"
-            VALUE "ProductName", "calendario_academico" "\0"
+            VALUE "OriginalFilename", "UniCal.exe" "\0"
+            VALUE "ProductName", "UniCal" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'services/sync_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'services/notification_service.dart';
+import 'models/models.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,13 +40,34 @@ class CalendarioAcademicoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'UniCal',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      routerConfig: AppRouter.router,
+    return ValueListenableBuilder<UserModel?>(
+      valueListenable: AuthService.instance.authState,
+      builder: (context, user, _) {
+        ThemeMode themeMode = ThemeMode.system;
+        if (user != null) {
+          switch (user.themeMode) {
+            case 'light':
+              themeMode = ThemeMode.light;
+              break;
+            case 'dark':
+              themeMode = ThemeMode.dark;
+              break;
+            case 'system':
+            default:
+              themeMode = ThemeMode.system;
+              break;
+          }
+        }
+
+        return MaterialApp.router(
+          title: 'UniCal',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          routerConfig: AppRouter.router,
+        );
+      },
     );
   }
 }

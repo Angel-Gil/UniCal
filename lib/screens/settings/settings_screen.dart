@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -6,6 +7,7 @@ import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_service.dart';
 import '../../services/academic_history_pdf.dart';
+import '../../services/ics_export_service.dart';
 
 /// Pantalla de configuración
 class SettingsScreen extends StatefulWidget {
@@ -146,11 +148,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: 'Descargar en PDF',
                       onTap: () => AcademicHistoryPdf.generateAndShare(context),
                     ),
+                    _SettingsTile(
+                      icon: Icons.calendar_month,
+                      title: 'Exportar Horario',
+                      subtitle: 'Descargar en formato .ics',
+                      onTap: () => _exportIcs(context),
+                    ),
                   ],
                 );
               },
             ),
           ],
+
+          const SizedBox(height: 24),
+          Text(
+            'Calendario y Tiempo',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _SettingsTile(
+            icon: Icons.access_time,
+            title: 'Formato de hora',
+            trailing: DropdownButton<String>(
+              value: user?.timeFormat ?? '12h',
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: '12h', child: Text('12 horas')),
+                DropdownMenuItem(value: '24h', child: Text('24 horas')),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  AuthService.instance.updateProfile(timeFormat: v);
+                }
+              },
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.view_week,
+            title: 'Inicio de semana',
+            trailing: DropdownButton<int>(
+              value: user?.startOfWeek ?? 1,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('Lunes')),
+                DropdownMenuItem(value: 7, child: Text('Domingo')),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  AuthService.instance.updateProfile(startOfWeek: v);
+                }
+              },
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.weekend_outlined,
+            title: 'Mostrar fines de semana',
+            trailing: Switch(
+              value: user?.showWeekends ?? true,
+              onChanged: (v) {
+                AuthService.instance.updateProfile(showWeekends: v);
+              },
+            ),
+          ),
 
           const SizedBox(height: 24),
           Text(
@@ -160,16 +221,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 8),
+          if (!kIsWeb)
+            _SettingsTile(
+              icon: Icons.widgets_outlined,
+              title: 'Personalizar Widget',
+              subtitle: 'Colores, estilo y preferencias del widget de inicio',
+              onTap: () => context.push('/settings/widget'),
+            ),
           _SettingsTile(
-            icon: Icons.widgets_outlined,
-            title: 'Personalizar Widget',
-            subtitle: 'Colores, estilo y preferencias del widget de inicio',
-            onTap: () => context.push('/settings/widget'),
-          ),
-          _SettingsTile(
-            icon: Icons.dark_mode_outlined,
-            title: 'Tema oscuro',
-            trailing: Switch(value: true, onChanged: (_) {}),
+            icon: Icons.color_lens_outlined,
+            title: 'Tema visual',
+            trailing: DropdownButton<String>(
+              value: user?.themeMode ?? 'system',
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 'light', child: Text('Claro')),
+                DropdownMenuItem(value: 'dark', child: Text('Oscuro')),
+                DropdownMenuItem(value: 'system', child: Text('Sistema')),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  AuthService.instance.updateProfile(themeMode: v);
+                }
+              },
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -208,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Ver en GitHub',
             onTap: () async {
               final uri = Uri.parse(
-                'https://github.com/Angel-Gil/Calendario-Universitario',
+                'https://github.com/Angel-Gil/UniCal',
               );
               if (await canLaunchUrl(uri)) {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -270,6 +345,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportIcs(BuildContext context) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generando archivo .ics...'))
+    );
+    await IcsExportService.exportCurrentSemester(context);
   }
 
   String _formatLastSync(DateTime? date) {

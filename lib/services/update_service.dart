@@ -11,9 +11,9 @@ class UpdateService {
 
   UpdateService._();
 
-  static const String _githubRepo = 'Angel-Gil/Calendario-Universitario';
+  static const String _githubRepo = 'Angel-Gil/UniCal';
   static const String _releasesUrl =
-      'https://github.com/Angel-Gil/Calendario-Universitario/releases';
+      'https://github.com/Angel-Gil/UniCal/releases';
 
   String? _currentVersion;
 

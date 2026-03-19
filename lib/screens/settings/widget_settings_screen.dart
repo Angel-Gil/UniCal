@@ -133,6 +133,13 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
+            'Vista Previa',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          _buildPreview(),
+          const Divider(height: 32),
+          const Text(
             'Modo de visualización',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -260,6 +267,122 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
                 });
                 _saveSettings();
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreview() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _backgroundColor.withValues(alpha: _backgroundOpacity),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'UniCal',
+                style: TextStyle(
+                  color: _titleColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Jueves',
+                style: TextStyle(
+                  color: _timeColor.withValues(alpha: 0.5),
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (_displayMode == 'next_class') ...[
+            Text(
+              'Cálculo Vectorial',
+              style: TextStyle(
+                color: _subjectColor,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              '08:00 AM - 10:00 AM',
+              style: TextStyle(
+                color: _timeColor,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              'Salón 301',
+              style: TextStyle(
+                color: _titleColor,
+                fontSize: 11,
+              ),
+            ),
+            Container(
+              height: 1,
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+            Text(
+              'Taller de derivadas parciales',
+              style: TextStyle(
+                color: const Color(0xFFFFAB91),
+                fontSize: 11,
+              ),
+            ),
+          ] else ...[
+            _buildSchedulePreviewItem('Ecuaciones Diferenciales', '08:00 AM - 10:00 AM'),
+            _buildSchedulePreviewItem('Física Mecánica', '10:00 AM - 12:00 PM'),
+            _buildSchedulePreviewItem('Programación', '02:00 PM - 04:00 PM'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSchedulePreviewItem(String subject, String time) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            subject,
+            style: TextStyle(
+              color: _subjectColor,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            time,
+            style: TextStyle(
+              color: _timeColor,
+              fontSize: 12,
             ),
           ),
         ],

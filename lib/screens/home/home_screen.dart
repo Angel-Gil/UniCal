@@ -369,6 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _SubjectCard(
                   subject: subject,
                   schedules: schedules,
+                  timeFormat: _currentUser?.timeFormat ?? '12h',
                   onTap: () => context.push('/subject/${subject.syncId}'),
                 ),
               );
@@ -420,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final event = _upcomingEvents[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: _EventCard(event: event),
+                child: _EventCard(event: event, timeFormat: _currentUser?.timeFormat ?? '12h'),
               );
             },
           ),
@@ -525,12 +526,26 @@ class _SubjectCard extends StatelessWidget {
   final SubjectModel subject;
   final List<ScheduleModel> schedules;
   final VoidCallback onTap;
+  final String timeFormat;
 
   const _SubjectCard({
     required this.subject,
     required this.schedules,
     required this.onTap,
+    this.timeFormat = '12h',
   });
+
+  String _formatTime(String time) {
+     if (timeFormat == '24h') return time;
+     final parts = time.split(':');
+     if (parts.length != 2) return time;
+     var h = int.tryParse(parts[0]) ?? 0;
+     final m = parts[1];
+     final ampm = h >= 12 ? 'PM' : 'AM';
+     if (h == 0) h = 12;
+     if (h > 12) h -= 12;
+     return '${h.toString().padLeft(2, '0')}:$m $ampm';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -579,7 +594,7 @@ class _SubjectCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         schedules
-                            .map((s) => '${s.shortDayName} ${s.startTime}')
+                            .map((s) => '${s.shortDayName} ${_formatTime(s.startTime)}')
                             .join(' • '),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
@@ -606,13 +621,25 @@ class _SubjectCard extends StatelessWidget {
 /// Card de evento
 class _EventCard extends StatelessWidget {
   final EventModel event;
+  final String timeFormat;
 
-  const _EventCard({required this.event});
+  const _EventCard({required this.event, this.timeFormat = '12h'});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = AppTheme.primaryColor;
+
+    String timeStr = '';
+    if (timeFormat == '24h') {
+        timeStr = '${event.dateTime.hour.toString().padLeft(2, '0')}:${event.dateTime.minute.toString().padLeft(2, '0')}';
+    } else {
+        int hour = event.dateTime.hour;
+        final ampm = hour >= 12 ? 'PM' : 'AM';
+        if (hour == 0) hour = 12;
+        if (hour > 12) hour -= 12;
+        timeStr = '${hour.toString().padLeft(2, '0')}:${event.dateTime.minute.toString().padLeft(2, '0')} $ampm';
+    }
 
     return Card(
       child: ListTile(
@@ -632,7 +659,7 @@ class _EventCard extends StatelessWidget {
         ),
         title: Text(event.title, style: theme.textTheme.titleSmall),
         subtitle: Text(
-          '${event.dateTime.day}/${event.dateTime.month}/${event.dateTime.year} • ${event.dateTime.hour}:${event.dateTime.minute.toString().padLeft(2, '0')}',
+          '${event.dateTime.day}/${event.dateTime.month}/${event.dateTime.year} • $timeStr',
         ),
       ),
     );

@@ -17,7 +17,7 @@ Aplicación móvil para gestionar tu vida académica: semestres, materias, horar
 - 📝 **Materias y Notas** — Registra materias con cortes de evaluación y calcula promedios
 - 📊 **Proyección de Notas** — Calcula la nota mínima necesaria para aprobar
 - 🗓️ **Horario Semanal** — Visualiza tu horario de clases en formato de grilla
-- 📅 **Calendario de Eventos** — Agrega y visualiza eventos académicos
+- 📅 ** de Eventos** — Agrega y visualiza eventos académicos
 - 🔔 **Notificaciones** — Recordatorios para clases y eventos
 - ☁️ **Sincronización en la Nube** — Backup y restauración con Firebase
 - 🔗 **Compartir Semestres** — Comparte tu semestre vía QR o enlace
@@ -34,7 +34,7 @@ Aplicación móvil para gestionar tu vida académica: semestres, materias, horar
 
 ## 📥 Descarga
 
-Descarga la última versión desde [**GitHub Releases**](https://github.com/Angel-Gil/Calendario-Universitario/releases/latest).
+Descarga la última versión desde [**GitHub Releases**](https://github.com/Angel-Gil/-Universitario/releases/latest).
 
 ## 🛠️ Tecnologías
 
@@ -55,8 +55,8 @@ Descarga la última versión desde [**GitHub Releases**](https://github.com/Ange
 ### Instrucciones
 ```bash
 # Clonar el repositorio
-git clone https://github.com/Angel-Gil/Calendario-Universitario.git
-cd Calendario-Universitario
+git clone https://github.com/Angel-Gil/UniCal.git
+cd UniCal
 
 # Instalar dependencias
 flutter pub get

@@ -7,6 +7,7 @@ import '../../models/models.dart';
 import '../../models/enums.dart'; // Importante para EventType
 import '../../services/local_database_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/auth_service.dart';
 
 /// Pantalla de calendario con eventos
 class CalendarScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  UserModel? _user;
 
   // Mapa de eventos agrupados por día normalizado (sin hora)
   Map<DateTime, List<EventModel>> _events = {};
@@ -30,12 +32,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    _user = _db.getCurrentUser();
+    AuthService.instance.authState.addListener(_onAuthChanged);
     _loadEvents();
+  }
+
+  void _onAuthChanged() {
+    if (mounted) {
+      setState(() {
+        _user = AuthService.instance.authState.value;
+      });
+      _loadEvents();
+    }
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.authState.removeListener(_onAuthChanged);
+    super.dispose();
   }
 
   Future<void> _loadEvents() async {
     setState(() => _isLoading = true);
-    final user = _db.getCurrentUser();
+    final user = _user; // Usar el usuario actualizado
 
     if (user != null) {
       final allEvents = _db.getAllEvents(user.uid);
@@ -88,7 +107,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             locale: 'es_ES',
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             eventLoader: _getEventsForDay,
-            startingDayOfWeek: StartingDayOfWeek.monday,
+            startingDayOfWeek: (_user?.startOfWeek ?? 1) == 7 
+                ? StartingDayOfWeek.sunday 
+                : StartingDayOfWeek.monday,
             calendarStyle: CalendarStyle(
               markerDecoration: BoxDecoration(
                 color: theme.colorScheme.primary,
@@ -149,6 +170,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ? Color(subject.colorValue)
         : AppTheme.primaryColor;
 
+    String timeStr = '';
+    if (_user?.timeFormat == '24h') {
+        timeStr = '${event.dateTime.hour.toString().padLeft(2, '0')}:${event.dateTime.minute.toString().padLeft(2, '0')}';
+    } else {
+        int hour = event.dateTime.hour;
+        final ampm = hour >= 12 ? 'PM' : 'AM';
+        if (hour == 0) hour = 12;
+        if (hour > 12) hour -= 12;
+        timeStr = '${hour.toString().padLeft(2, '0')}:${event.dateTime.minute.toString().padLeft(2, '0')} $ampm';
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -165,9 +197,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
         title: Text(event.title),
-        subtitle: Text(
-          '${event.type.nameEs} • ${event.dateTime.hour}:${event.dateTime.minute.toString().padLeft(2, '0')}',
-        ),
+        subtitle: Text('${event.type.nameEs} • $timeStr'),
         trailing: subject != null
             ? Text(
                 subject.name,

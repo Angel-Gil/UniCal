@@ -212,6 +212,10 @@ class AuthService {
     double? gradeScaleMax,
     List<int>? notificationOffsets,
     bool? notificationsEnabled,
+    String? themeMode,
+    String? timeFormat,
+    bool? showWeekends,
+    int? startOfWeek,
   }) async {
     if (_currentUser == null) return;
 
@@ -221,6 +225,10 @@ class AuthService {
       gradeScaleMax: gradeScaleMax,
       notificationOffsets: notificationOffsets,
       notificationsEnabled: notificationsEnabled,
+      themeMode: themeMode,
+      timeFormat: timeFormat,
+      showWeekends: showWeekends,
+      startOfWeek: startOfWeek,
     );
 
     // Actualizar en Firestore

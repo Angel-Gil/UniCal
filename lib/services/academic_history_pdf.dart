@@ -132,11 +132,19 @@ class AcademicHistoryPdf {
         margin: const pw.EdgeInsets.all(40),
         header: (context) => _buildHeader(user, now, headerColor),
         footer: (context) => pw.Container(
-          alignment: pw.Alignment.centerRight,
           margin: const pw.EdgeInsets.only(top: 8),
-          child: pw.Text(
-            'Página ${context.pageNumber} de ${context.pagesCount}',
-            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Elaborado por UniCal - ${user.name}',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+              pw.Text(
+                'Página ${context.pageNumber} de ${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ],
           ),
         ),
         build: (context) => [
@@ -154,6 +162,18 @@ class AcademicHistoryPdf {
             failColor: failColor,
           ),
 
+          pw.SizedBox(height: 12),
+          pw.Center(
+            child: pw.Text(
+              'EL PRESENTE REPORTE NO CONSTITUYE UNA CERTIFICACIÓN DE NOTAS.',
+              textAlign: pw.TextAlign.center,
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey800,
+              ),
+            ),
+          ),
           pw.SizedBox(height: 20),
 
           // ---- Per-Semester Tables ----

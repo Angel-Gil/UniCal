@@ -22,6 +22,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final List<String> _days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   final List<_ScheduleBlock> _blocks = [];
   bool _isLoading = true;
+  UserModel? _currentUser;
 
   // Configuración de horario
   final double _startHour = 7.0; // 7:00 AM
@@ -34,11 +35,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUser = _db.getCurrentUser();
+    AuthService.instance.authState.addListener(_onAuthChanged);
     _pixelsPerMinute =
         0.45; // Reducido para que ocupe menos altura (aprox mitad de pantalla)
     _slotHeight = _slotDurationMinutes * _pixelsPerMinute;
     _generateTimeSlots();
     _loadSchedule();
+  }
+
+  void _onAuthChanged() {
+    if (mounted) {
+      setState(() {
+        _currentUser = AuthService.instance.authState.value;
+      });
+      _loadSchedule();
+    }
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.authState.removeListener(_onAuthChanged);
+    super.dispose();
   }
 
   void _generateTimeSlots() {
@@ -55,7 +73,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _loadSchedule() async {
     setState(() => _isLoading = true);
 
-    final user = _db.getCurrentUser();
+    final user = _currentUser;
     if (user != null) {
       final semesters = _db.getSemesters(user.uid);
       if (semesters.isNotEmpty) {
@@ -262,6 +280,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
+  List<int> _getDayIndices() {
+    final start = _currentUser?.startOfWeek ?? 1; // 1 = Lun, 7 = Dom
+    final showWeekends = _currentUser?.showWeekends ?? true;
+    
+    if (!showWeekends) return [0, 1, 2, 3, 4];
+    if (start == 7) return [6, 0, 1, 2, 3, 4, 5];
+    return [0, 1, 2, 3, 4, 5, 6];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -296,10 +323,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Expanded(
             child: SingleChildScrollView(
               child: Row(
-                children: List.generate(
-                  _days.length,
+                children: _getDayIndices().map(
                   (i) => Expanded(child: _buildDayColumn(theme, i)),
-                ),
+                ).toList(),
               ),
             ),
           ),
@@ -492,6 +518,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   String _formatTime(double time) {
     final h = time.floor();
     final m = ((time - h) * 60).round();
+    if (_currentUser?.timeFormat == '24h') {
+        return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
     final ampm = h >= 12 ? 'PM' : 'AM';
     final hour12 = h > 12 ? h - 12 : (h == 0 ? 12 : h);
     return '$hour12:${m.toString().padLeft(2, '0')} $ampm';

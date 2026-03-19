@@ -11,6 +11,10 @@ class UserModel {
   final DateTime updatedAt;
   final List<int> notificationOffsets; // Minutos antes del evento
   final bool notificationsEnabled;
+  final String themeMode; // 'light', 'dark', 'system'
+  final String timeFormat; // '12h', '24h'
+  final bool showWeekends;
+  final int startOfWeek; // 1 = Lunes, 7 = Domingo
 
   UserModel({
     required this.uid,
@@ -24,6 +28,10 @@ class UserModel {
     DateTime? updatedAt,
     List<int>? notificationOffsets,
     this.notificationsEnabled = true,
+    this.themeMode = 'system',
+    this.timeFormat = '12h',
+    this.showWeekends = true,
+    this.startOfWeek = 1,
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now(),
        notificationOffsets = notificationOffsets ?? [15]; // Default: 15 min
@@ -38,6 +46,10 @@ class UserModel {
     'updatedAt': updatedAt.toIso8601String(),
     'notificationOffsets': notificationOffsets,
     'notificationsEnabled': notificationsEnabled,
+    'themeMode': themeMode,
+    'timeFormat': timeFormat,
+    'showWeekends': showWeekends,
+    'startOfWeek': startOfWeek,
   };
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -51,6 +63,10 @@ class UserModel {
         ?.map((e) => e as int)
         .toList(),
     notificationsEnabled: json['notificationsEnabled'] ?? true,
+    themeMode: json['themeMode'] ?? 'system',
+    timeFormat: json['timeFormat'] ?? '12h',
+    showWeekends: json['showWeekends'] ?? true,
+    startOfWeek: json['startOfWeek'] ?? 1,
   );
 
   UserModel copyWith({
@@ -59,6 +75,10 @@ class UserModel {
     double? gradeScaleMax,
     List<int>? notificationOffsets,
     bool? notificationsEnabled,
+    String? themeMode,
+    String? timeFormat,
+    bool? showWeekends,
+    int? startOfWeek,
   }) => UserModel(
     uid: uid,
     name: name ?? this.name,
@@ -71,5 +91,9 @@ class UserModel {
     updatedAt: DateTime.now(),
     notificationOffsets: notificationOffsets ?? this.notificationOffsets,
     notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+    themeMode: themeMode ?? this.themeMode,
+    timeFormat: timeFormat ?? this.timeFormat,
+    showWeekends: showWeekends ?? this.showWeekends,
+    startOfWeek: startOfWeek ?? this.startOfWeek,
   );
 }
